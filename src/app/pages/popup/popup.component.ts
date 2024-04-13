@@ -26,11 +26,14 @@ import { InputNumberModule } from 'primeng/inputnumber';
               <div class="shadow-2 p-3 border-round">
                   <div class="flex justify-content-between">
                       <div>
-                          <span class="block text-500 font-medium mb-3">單字詳情頁</span>
+                          <span class="text-900 text-xl mb-3 font-medium mb-3">單字詳情頁</span>
                       </div>
                   </div>
                   <div>
                     <p-button size="small" label="列表英文字體放大" (onClick)="sendMessage(action.ENLARGE_EN_TEXT_FONT_SIZE_OF_THE_LIST)"></p-button>
+                  </div>
+                  <div>
+                    <span class="text-700 line-height-3">N：唸英文單字。M：取消星號。</span>
                   </div>
               </div>
           </div>
@@ -38,10 +41,9 @@ import { InputNumberModule } from 'primeng/inputnumber';
               <div class="shadow-2 p-3 border-round">
                   <div class="flex justify-content-between">
                       <div>
-                          <span class="block text-500 font-medium mb-3">聲音調整</span>
+                          <span class="text-900 text-xl mb-3 font-medium mb-3">Flashcard</span>
                       </div>
                   </div>
-                  <div>
                   <div class="flex mb-2">
                     <div class="flex flex-column mr-2">
                       <label class="text-900 font-medium mb-2 mr-2">
@@ -108,9 +110,35 @@ import { InputNumberModule } from 'primeng/inputnumber';
                       </div>
                     </div>
                   </div>
+                  <div>
+                    <span class="text-700 line-height-3">X：唸英文單字。</span>
+                  </div>
               </div>
           </div>
-      </div>
+          <div class="mb-2">
+              <div class="shadow-2 p-3 border-round">
+                  <div class="flex justify-content-between">
+                      <div>
+                          <span class="text-900 text-xl mb-3 font-medium mb-3">測驗頁</span>
+                      </div>
+                  </div>
+                  <div>
+                    <span class="text-700 line-height-3">1~4：選擇。0：聲音。</span>
+                  </div>
+              </div>
+          </div>
+          <div class="mb-2">
+              <div class="shadow-2 p-3 border-round">
+                  <div class="flex justify-content-between">
+                      <div>
+                          <span class="text-900 text-xl mb-3 font-medium mb-3">學習頁</span>
+                      </div>
+                  </div>
+                  <div>
+                    <span class="text-700 line-height-3">0：聲音。</span>
+                  </div>
+              </div>
+          </div>
     </div>
   `,
   styleUrl: './popup.component.scss',
@@ -137,7 +165,7 @@ export class PopupComponent {
       this.isFirstTrigger = false;
       return;
     }
-    chrome.storage.local.set({ 
+    chrome.storage.local.set({
       voice,
       pitch,
       rate,

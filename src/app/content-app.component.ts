@@ -83,7 +83,6 @@ export class ContentAppComponent {
         }
         break;
       case '0':
-      case '5':
         soundButton?.click();
         break;
       default:
@@ -97,7 +96,6 @@ export class ContentAppComponent {
     const soundButton = this.document.querySelector('[aria-label="sound"]') as HTMLElement;
     switch (event.key) {
       case '0':
-      case '5':
         soundButton?.click();
         break;
       default:
