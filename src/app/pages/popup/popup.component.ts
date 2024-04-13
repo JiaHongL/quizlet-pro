@@ -89,7 +89,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
                           [showButtons]="true" 
                           mode="decimal" 
                           [min]="0.1" 
-                          [max]="1"
+                          [max]="2"
                           [step]="0.1"
                         > </p-inputNumber>
                       </div>
@@ -104,7 +104,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
                           [showButtons]="true" 
                           mode="decimal" 
                           [min]="0.1" 
-                          [max]="1"
+                          [max]="10"
                           [step]="0.1"
                         > </p-inputNumber>
                       </div>
