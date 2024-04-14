@@ -1,8 +1,10 @@
 import { CommonModule, DOCUMENT } from '@angular/common';
-import { ChangeDetectionStrategy, Component, ComponentRef, Renderer2, ViewContainerRef, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject } from '@angular/core';
 import { EventManagerServiceService } from './shared/services/event-manager-service.service';
 import { InjectionToken } from '@angular/core';
 import { Action } from './enum/action.enum';
+import { ajax } from 'rxjs/ajax';
+import { map, catchError, of } from 'rxjs';
 export const WINDOW = new InjectionToken<Window>('Global window object', {
   factory: () => window
 });
@@ -22,12 +24,11 @@ export class ContentAppComponent {
 
   eventManagerServiceService = inject(EventManagerServiceService);
   private eventRemovers: Function[] = [];
-  private renderer: Renderer2 = inject(Renderer2);
   private document: Document = inject(DOCUMENT);
   private window: Window = inject(WINDOW);
 
   constructor() {
-    effect(() => {
+    effect(async () => {
       this.eventRemovers = this.eventManagerServiceService.addMultipleEvents(this.window,
         [
           { event: 'keydown', callback: (e: any) => this.onTestPageKeydown(e) },
@@ -40,7 +41,7 @@ export class ContentAppComponent {
     // 初始化
     chrome.runtime.sendMessage({ action: Action.CONTEXT_APP_INIT });
     // 監聽 popup 發送的訊息
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse)=> {
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       switch (request.action) {
         case Action.ENLARGE_EN_TEXT_FONT_SIZE_OF_THE_LIST:
           this.setListFontSize();
@@ -108,7 +109,7 @@ export class ContentAppComponent {
       return;
     }
 
-    const termText = this.document.querySelector('.SetPageTerms-term')?.querySelector('[data-testid=set-page-card-side]')?.querySelector('.TermText')  as HTMLElement;
+    const termText = this.document.querySelector('.SetPageTerms-term')?.querySelector('[data-testid=set-page-card-side]')?.querySelector('.TermText') as HTMLElement;
     const starButton = this.document.querySelector('.SetPageTerms-term')?.querySelector('[aria-label="星號標記"]') as HTMLElement;
 
     switch (event.key) {
@@ -131,9 +132,13 @@ export class ContentAppComponent {
     }
 
     const enText = this.document.querySelector('.lang-en')?.childNodes[0].textContent as string;
+    const starButton = this.document.querySelector('[aria-label="star filled"]') as HTMLElement;
 
     switch (event.key) {
       case 'x':
+        starButton.click();
+        break;
+      case 'z':
         const storage = await chrome.storage.local.get(['voice', 'pitch', 'rate', 'volume']);
         const voices = speechSynthesis.getVoices();
         let selectedVoice = voices.find(voice => voice.name === storage['voice']);
@@ -143,6 +148,7 @@ export class ContentAppComponent {
         utterance.rate = storage['rate'];
         utterance.volume = storage['volume'];
         // 播放語音
+        this.window.speechSynthesis.cancel();
         this.window.speechSynthesis.speak(utterance);
         break;
       default:
@@ -154,9 +160,30 @@ export class ContentAppComponent {
 
 
   setListFontSize() {
-    this.document.querySelectorAll('.TermText.lang-en').forEach((element:any)=>{
+    this.document.querySelectorAll('.TermText.lang-en').forEach((element: any, index) => {
+      const word = element.textContent;
       element.style = 'font-size:30px';
+      const parentElement = element.parentElement;
+      let ms = 500 * index;
+      if (index > 200) {
+        ms = 1000 * index;
+      }
+      setTimeout(()=>{
+        chrome.runtime.sendMessage(
+          {
+            contentScriptQuery: "fetchUrl",
+            url: "https://tw.dictionary.search.yahoo.com/search?p=" + word + "&fr2=dict",
+            responseType: "text"
+          },
+          response => {
+            const pattern = /KK\[[^\]]+\]/g;
+            const matches = response.data.match(pattern);
+            parentElement.insertAdjacentHTML('beforeend', '<div><small style="color:#A7A7A7">'+ matches[0].replace('KK', '') +'</small></div>');
+          });
+      }, ms);
+
     });
+
   }
 
   ngOnDestroy() {

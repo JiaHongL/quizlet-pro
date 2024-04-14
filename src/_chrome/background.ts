@@ -68,4 +68,19 @@ chrome.runtime.onMessage.addListener((request:Message, sender, sendResponse) => 
       chrome.tabs.sendMessage(contentAppSenderTabId, request, function(response) {});
     }
   }
+  if (request.hasOwnProperty('url')) {
+    const url = request.url as string;
+    fetch(url)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return request.responseType === 'text' ? response.text() : response.json();
+    })
+    .then(data => sendResponse({ data })) // 發送文本給內容腳本
+    .catch(error => sendResponse({ error: error.message }));
+  }
+
+  return true;
+
 });

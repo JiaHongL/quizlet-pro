@@ -30,10 +30,10 @@ import { InputNumberModule } from 'primeng/inputnumber';
                       </div>
                   </div>
                   <div>
-                    <p-button size="small" label="列表英文字體放大" (onClick)="sendMessage(action.ENLARGE_EN_TEXT_FONT_SIZE_OF_THE_LIST)"></p-button>
+                    <p-button size="small" label="列表英文放大+音標" (onClick)="sendMessage(action.ENLARGE_EN_TEXT_FONT_SIZE_OF_THE_LIST)"></p-button>
                   </div>
                   <div>
-                    <span class="text-700 line-height-3">N：唸英文單字。M：取消星號。</span>
+                    <span class="text-700 line-height-3">N：唸英文。M：星號。</span>
                   </div>
               </div>
           </div>
@@ -111,7 +111,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
                     </div>
                   </div>
                   <div>
-                    <span class="text-700 line-height-3">X：唸英文單字。</span>
+                    <span class="text-700 line-height-3">Z：唸英文。X：星號。</span>
                   </div>
               </div>
           </div>
