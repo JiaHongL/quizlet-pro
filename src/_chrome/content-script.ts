@@ -16,8 +16,8 @@ try {
   const appElement = document.createElement("content-app-root");
   appContainer.appendChild(appElement);
 
-  // 3. 將擴充套件的 js 和 css 掛在被擴充的網站上 runtime.js
-  ["styles.css", "polyfills.js"].forEach((file) => {
+  // 3. 將擴充套件的 js 和 css 掛在被擴充的網站上 polyfills.js, runtime.js
+  ["styles.css"].forEach((file) => {
     if (file.endsWith(".css")) {
       injectDOMElement("link", document.head, {
         rel: "stylesheet",

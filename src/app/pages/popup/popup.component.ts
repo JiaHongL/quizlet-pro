@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, effect, signal } from '@angular/core';
+import { ApplicationRef, ChangeDetectionStrategy, ChangeDetectorRef, Component, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { Action } from '../../enum/action.enum';
@@ -7,6 +7,8 @@ import { ButtonModule } from 'primeng/button';
 import { DropdownModule } from 'primeng/dropdown';
 import { SliderModule } from 'primeng/slider';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { Message } from '../../models/message.model';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-popup',
@@ -26,7 +28,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
               <div class="shadow-2 p-3 border-round">
                   <div class="flex justify-content-between">
                       <div>
-                          <span class="text-900 text-xl mb-3 font-medium mb-3">單字詳情頁</span>
+                          <span class="text-900 text-xl mb-3 font-medium mb-3">學習集頁面</span>
                       </div>
                   </div>
                   <div>
@@ -34,6 +36,21 @@ import { InputNumberModule } from 'primeng/inputnumber';
                   </div>
                   <div>
                     <span class="text-700 line-height-3">N：唸英文。M：星號。</span>
+                  </div>
+              </div>
+          </div>
+          <div class="mb-2">
+              <div class="shadow-2 p-3 border-round">
+                  <div class="flex justify-content-between">
+                      <div>
+                          <span class="text-900 text-xl mb-3 font-medium mb-3">學習頁</span>
+                      </div>
+                  </div>
+                  <div>
+                    <p-button size="small" label="switch pro 手把連線測試" (onClick)="sendMessage(action.GAME_CONTROLLER_CONNECTION_CHECK)" ></p-button>
+                  </div>
+                  <div>
+                    <span class="text-700 line-height-3">0：聲音。</span>
                   </div>
               </div>
           </div>
@@ -127,18 +144,6 @@ import { InputNumberModule } from 'primeng/inputnumber';
                   </div>
               </div>
           </div>
-          <div class="mb-2">
-              <div class="shadow-2 p-3 border-round">
-                  <div class="flex justify-content-between">
-                      <div>
-                          <span class="text-900 text-xl mb-3 font-medium mb-3">學習頁</span>
-                      </div>
-                  </div>
-                  <div>
-                    <span class="text-700 line-height-3">0：聲音。</span>
-                  </div>
-              </div>
-          </div>
     </div>
   `,
   styleUrl: './popup.component.scss',
@@ -149,6 +154,9 @@ export class PopupComponent {
   action = Action;
 
   voices: any[] = [];
+  messageService = inject(MessageService);
+  changeDetectorRef = inject(ChangeDetectorRef);
+  appRef: ApplicationRef = inject(ApplicationRef);
 
   selectedVoice = signal('Nicky');
   selectedPitch = signal(1);
@@ -218,6 +226,16 @@ export class PopupComponent {
       this.selectRate.set(storage['rate'] || 0.7);
       this.selectVolume.set(storage['volume'] || 1);
     });
+    chrome.runtime.onMessage.addListener((request:Message, sender, sendResponse) => {
+      if (request.action === Action.GAME_CONTROLLER_CONNECTION_SUCCESS) {
+        this.messageService.add({
+          severity:'success', 
+          summary: '提示', 
+          detail: 'switch pro 手把，連線測試成功！',
+        });
+        this.appRef.tick();
+      }
+    });
   }
 
   playVoice() {
@@ -229,4 +247,5 @@ export class PopupComponent {
     utterance.volume = this.selectVolume();
     speechSynthesis.speak(utterance);
   }
+
 }

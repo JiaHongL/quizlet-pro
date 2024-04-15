@@ -26,6 +26,7 @@ export class ContentAppComponent {
   private eventRemovers: Function[] = [];
   private document: Document = inject(DOCUMENT);
   private window: Window = inject(WINDOW);
+  action = Action;
 
   constructor() {
     effect(async () => {
@@ -44,7 +45,10 @@ export class ContentAppComponent {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       switch (request.action) {
         case Action.ENLARGE_EN_TEXT_FONT_SIZE_OF_THE_LIST:
-          this.setListFontSize();
+          this.setListFontSizeAndKK();
+          break;
+        case Action.GAME_CONTROLLER_CONNECTION_CHECK:
+          this.addGamePadConnectedEventListener();
           break;
         default:
           break;
@@ -52,6 +56,91 @@ export class ContentAppComponent {
       // 保持 sendResponse 一直是 true
       return true;
     });
+  }
+
+
+  addGamePadConnectedEventListener() {
+    if (navigator.getGamepads()[0]?.id.includes('Switch Pro Controller')) {
+      chrome.runtime.sendMessage({ action : this.action.GAME_CONTROLLER_CONNECTION_SUCCESS });
+      return;
+    }
+    window.addEventListener("gamepadconnected", this.gamepadEventHandler);
+  }
+
+  lastButtons: any[] = [];
+
+  gamepadEventHandler = (e: GamepadEvent) => {
+    chrome.runtime.sendMessage({ action : this.action.GAME_CONTROLLER_CONNECTION_SUCCESS });
+    requestAnimationFrame(this.updateGamepads); 
+  }
+
+  updateGamepads = () => {
+    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+    for (let gamepad of gamepads) {
+      if (gamepad) {
+        gamepad.buttons.forEach((button, index) => {
+          if (button.pressed) {
+            if (!this.lastButtons[gamepad.index]) {
+              this.lastButtons[gamepad.index] = [];
+            }
+            if (!this.lastButtons[gamepad.index][index]) {
+              this.lastButtons[gamepad.index][index] = true;
+              // console.log(`按鈕 ${index} 被按下`);
+              this.onLearnPageGamePadClick(index);
+            }
+          } else {
+            if (this.lastButtons[gamepad.index] && this.lastButtons[gamepad.index][index]) {
+              this.lastButtons[gamepad.index][index] = false;
+              // console.log(`按鈕 ${index} 被釋放`);
+            }
+          }
+        });
+      }
+    }
+    requestAnimationFrame(this.updateGamepads); // 繼續檢查狀態
+  }
+
+  onLearnPageGamePadClick(buttonIndex: number) {
+    if (!this.window.location.href.includes('/learn')) { return; }
+    const soundButton = this.document.querySelector('[aria-label="sound"]') as HTMLElement;
+    const continueButton = this.document.querySelector('[aria-label="繼續"]') as HTMLElement;
+    const mcqAnswers = this.document.querySelector('[data-testid="MCQ Answers"]');
+    switch (buttonIndex) {
+      case 0:
+        (mcqAnswers?.childNodes[3] as HTMLElement)?.click();
+        break;
+      case 1:
+        (mcqAnswers?.childNodes[2] as HTMLElement)?.click();
+        break;
+      case 2:
+        (mcqAnswers?.childNodes[0] as HTMLElement)?.click();
+        break;
+      case 3:
+        (mcqAnswers?.childNodes[1] as HTMLElement)?.click();
+        break;
+      case 4:
+      case 5:
+      case 6:
+      case 7:
+        soundButton?.click();
+        break;
+      default:
+        break;
+    }
+    continueButton?.click();
+  }
+
+  onLearnPageKeydown(event: KeyboardEvent) {
+    if (!this.window.location.href.includes('/learn?')) { return; }
+    const soundButton = this.document.querySelector('[aria-label="sound"]') as HTMLElement;
+    switch (event.key) {
+      case '5':
+      case ' ':
+        soundButton?.click();
+        break;
+      default:
+        break;
+    }
   }
 
   onTestPageKeydown(event: KeyboardEvent) {
@@ -83,25 +172,13 @@ export class ContentAppComponent {
           (mcqAnswers.childNodes[3] as HTMLElement).click();
         }
         break;
-      case '0':
+      case '5':
         soundButton?.click();
         break;
       default:
         break;
     }
 
-  }
-
-  onLearnPageKeydown(event: KeyboardEvent) {
-    if (!this.window.location.href.includes('/learn?')) { return; }
-    const soundButton = this.document.querySelector('[aria-label="sound"]') as HTMLElement;
-    switch (event.key) {
-      case '0':
-        soundButton?.click();
-        break;
-      default:
-        break;
-    }
   }
 
   onDetailPageKeydown(event: KeyboardEvent) {
@@ -158,8 +235,7 @@ export class ContentAppComponent {
 
   }
 
-
-  setListFontSize() {
+  setListFontSizeAndKK() {
     this.document.querySelectorAll('.TermText.lang-en').forEach((element: any, index) => {
       const word = element.textContent;
       element.style = 'font-size:30px';
@@ -168,7 +244,7 @@ export class ContentAppComponent {
       if (index > 200) {
         ms = 1000 * index;
       }
-      setTimeout(()=>{
+      setTimeout(() => {
         chrome.runtime.sendMessage(
           {
             contentScriptQuery: "fetchUrl",
@@ -178,7 +254,7 @@ export class ContentAppComponent {
           response => {
             const pattern = /KK\[[^\]]+\]/g;
             const matches = response.data.match(pattern);
-            parentElement.insertAdjacentHTML('beforeend', '<div><small style="color:#A7A7A7">'+ matches[0].replace('KK', '') +'</small></div>');
+            parentElement.insertAdjacentHTML('beforeend', '<div><small style="color:#A7A7A7">' + matches[0].replace('KK', '') + '</small></div>');
           });
       }, ms);
 
