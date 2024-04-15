@@ -32,7 +32,8 @@ import { MessageService } from 'primeng/api';
                       </div>
                   </div>
                   <div>
-                    <p-button size="small" label="列表英文放大+音標" (onClick)="sendMessage(action.ENLARGE_EN_TEXT_FONT_SIZE_OF_THE_LIST)"></p-button>
+                    <p-button class="mr-2" size="small" label="列表英文放大+音標" (onClick)="sendMessage(action.ENLARGE_EN_TEXT_FONT_SIZE_OF_THE_LIST)"></p-button>
+                    <p-button size="small" label="switch pro 手把連線測試" (onClick)="sendMessage(action.GAME_CONTROLLER_CONNECTION_CHECK)" ></p-button>
                   </div>
                   <div>
                     <span class="text-700 line-height-3">N：唸英文。M：星號。</span>
@@ -138,6 +139,9 @@ import { MessageService } from 'primeng/api';
                       <div>
                           <span class="text-900 text-xl mb-3 font-medium mb-3">測驗頁</span>
                       </div>
+                  </div>
+                  <div>
+                    <p-button size="small" label="switch pro 手把連線測試" (onClick)="sendMessage(action.GAME_CONTROLLER_CONNECTION_CHECK)" ></p-button>
                   </div>
                   <div>
                     <span class="text-700 line-height-3">1~4：選擇。0：聲音。</span>

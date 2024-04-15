@@ -87,6 +87,8 @@ export class ContentAppComponent {
               this.lastButtons[gamepad.index][index] = true;
               // console.log(`按鈕 ${index} 被按下`);
               this.onLearnPageGamePadClick(index);
+              this.onTextPageGamePadClick(index);
+              this.onDetailPageGamePadClick(index);
             }
           } else {
             if (this.lastButtons[gamepad.index] && this.lastButtons[gamepad.index][index]) {
@@ -108,26 +110,32 @@ export class ContentAppComponent {
     switch (buttonIndex) {
       case 0:
         (mcqAnswers?.childNodes[3] as HTMLElement)?.click();
+        continueButton?.click();
         break;
       case 1:
         (mcqAnswers?.childNodes[2] as HTMLElement)?.click();
+        continueButton?.click();
         break;
       case 2:
         (mcqAnswers?.childNodes[0] as HTMLElement)?.click();
+        continueButton?.click();
         break;
       case 3:
         (mcqAnswers?.childNodes[1] as HTMLElement)?.click();
+        continueButton?.click();
         break;
       case 4:
-      case 5:
       case 6:
+        soundButton?.click();
+        break;
+      case 5:
       case 7:
         soundButton?.click();
+        continueButton?.click();
         break;
       default:
         break;
     }
-    continueButton?.click();
   }
 
   onLearnPageKeydown(event: KeyboardEvent) {
@@ -136,6 +144,44 @@ export class ContentAppComponent {
     switch (event.key) {
       case '5':
       case ' ':
+        soundButton?.click();
+        break;
+      default:
+        break;
+    }
+  }
+
+  onTextPageGamePadClick(buttonIndex: number) {
+    if (!this.window.location.href.includes('/test')) { return; }
+    var currentItemIndex = Number(document?.querySelector('.qzk5crt')?.textContent?.split('/')[0]?.trim());
+    const mcqAnswers = this.document.querySelectorAll('[role="listitem"]')[currentItemIndex]?.querySelector('[data-testid="MCQ Answers"]');
+    const soundButton = this.document.querySelectorAll('[role="listitem"]')[currentItemIndex]?.querySelector('[aria-label="sound"]') as HTMLElement;
+
+    switch (buttonIndex) {
+      case 0:
+        if (mcqAnswers) {
+          (mcqAnswers.childNodes[3] as HTMLElement).click();
+        }
+        break;
+      case 1:
+        if (mcqAnswers) {
+          (mcqAnswers.childNodes[2] as HTMLElement).click();
+        }
+        break;
+      case 2:
+        if (mcqAnswers) {
+          (mcqAnswers.childNodes[0] as HTMLElement).click();
+        }
+        break;
+      case 3:
+        if (mcqAnswers) {
+          (mcqAnswers.childNodes[1] as HTMLElement).click();
+        }
+        break;
+      case 4:
+      case 5:
+      case 6:
+      case 7:
         soundButton?.click();
         break;
       default:
@@ -179,6 +225,32 @@ export class ContentAppComponent {
         break;
     }
 
+  }
+
+  onDetailPageGamePadClick(buttonIndex: number) {
+    if (!this.window.location.pathname.includes('/tw/')) {
+      return;
+    }
+
+    const termText = this.document.querySelector('.SetPageTerms-term')?.querySelector('[data-testid=set-page-card-side]')?.querySelector('.TermText') as HTMLElement;
+    const starButton = this.document.querySelector('.SetPageTerms-term')?.querySelector('[aria-label="星號標記"]') as HTMLElement;
+
+    switch (buttonIndex) {
+      case 0:
+      case 1:
+      case 2:
+      case 3:
+        starButton?.click();
+        break;
+      case 4:
+      case 6:
+      case 5:
+      case 7:
+        termText?.click();
+        break;
+      default:
+        break;
+    }
   }
 
   onDetailPageKeydown(event: KeyboardEvent) {
