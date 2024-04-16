@@ -28,7 +28,7 @@ export class ContentAppComponent {
   private window: Window = inject(WINDOW);
   action = Action;
 
-  gamePadClickSubject = new Subject<number>(); 
+  gamePadClickSubject = new Subject<number>();
   axisSubject = new Subject<number>();
 
   constructor() {
@@ -67,19 +67,19 @@ export class ContentAppComponent {
       this.onFlashcardPageGamePadClick(buttonIndex);
     });
     this
-    .axisSubject
-    .pipe(
-      debounceTime(100)
-    )
-    .subscribe((axis) => {
-      this.gamePadClickSubject.next(axis);
-    });
+      .axisSubject
+      .pipe(
+        debounceTime(100)
+      )
+      .subscribe((axis) => {
+        this.gamePadClickSubject.next(axis);
+      });
   }
 
 
   addGamePadConnectedEventListener() {
     if (navigator.getGamepads()[0]?.id.includes('Switch Pro Controller')) {
-      chrome.runtime.sendMessage({ action : this.action.GAME_CONTROLLER_CONNECTION_SUCCESS });
+      chrome.runtime.sendMessage({ action: this.action.GAME_CONTROLLER_CONNECTION_SUCCESS });
       return;
     }
     window.addEventListener("gamepadconnected", this.gamepadEventHandler);
@@ -88,8 +88,8 @@ export class ContentAppComponent {
   lastButtons: any[] = [];
 
   gamepadEventHandler = (e: GamepadEvent) => {
-    chrome.runtime.sendMessage({ action : this.action.GAME_CONTROLLER_CONNECTION_SUCCESS });
-    requestAnimationFrame(this.updateGamepads); 
+    chrome.runtime.sendMessage({ action: this.action.GAME_CONTROLLER_CONNECTION_SUCCESS });
+    requestAnimationFrame(this.updateGamepads);
   }
 
   updateGamepads = () => {
@@ -314,11 +314,30 @@ export class ContentAppComponent {
 
   }
 
-  async onFlashcardPageGamePadClick(buttonIndex: number) {
+  async speak(text: string, isTwVoice = false) {
+    const storage = await chrome.storage.local.get(['voice', 'pitch', 'rate', 'volume']);
+    const voices = speechSynthesis.getVoices();
+    let selectedVoice = voices.find(voice => voice.name === storage['voice']);
+    if(isTwVoice){
+      selectedVoice = voices.find(voice => voice.name.includes('HsiaoChen'));
+    }
+    let utterance = new SpeechSynthesisUtterance(text);
+    utterance.voice = selectedVoice as any;
+    if (!isTwVoice) {
+      utterance.pitch = storage['pitch'];
+      utterance.rate = storage['rate'];
+      utterance.volume = storage['volume'];
+    }
+    this.window.speechSynthesis.cancel();
+    this.window.speechSynthesis.speak(utterance);
+  }
+
+  onFlashcardPageGamePadClick(buttonIndex: number) {
     if (!this.window.location.pathname.includes('/flashcards')) {
       return;
     }
     const enText = this.document.querySelector('.lang-en')?.childNodes[0].textContent as string;
+    const twText = this.document.querySelector('.lang-zh-TW')?.childNodes[0].textContent as string;
     const starButton = this.document.querySelector('[aria-label="star filled"]') as HTMLElement;
     const previousButton = this.document.querySelector('[aria-label="按下以學習上一張單詞卡"]') as HTMLElement;
     const nextButton = this.document.querySelector('[aria-label="按下以學習下一張單詞卡"]') as HTMLElement;
@@ -327,27 +346,32 @@ export class ContentAppComponent {
       case 3:
         starButton.click();
         break;
+      case 0:
+        this.speak(twText, true);
+        break;
+      case 2:
+        this.speak(enText, true);
+        break;
+      case 1:
       case 4:
       case 5:
+        this.speak(enText);
+        break;
       case 6:
-      case 7:
-        const storage = await chrome.storage.local.get(['voice', 'pitch', 'rate', 'volume']);
-        const voices = speechSynthesis.getVoices();
-        let selectedVoice = voices.find(voice => voice.name === storage['voice']);
-        let utterance = new SpeechSynthesisUtterance(enText);
-        utterance.voice = selectedVoice as any;
-        utterance.pitch = storage['pitch'];
-        utterance.rate = storage['rate'];
-        utterance.volume = storage['volume'];
-        // 播放語音
-        this.window.speechSynthesis.cancel();
-        this.window.speechSynthesis.speak(utterance);
-        break;
-      case 99:
-        nextButton.click();
-        break;
       case -99:
         previousButton.click();
+        setTimeout(() => {
+          const preEnText = this.document.querySelector('.lang-en')?.childNodes[0].textContent as string;
+          this.speak(preEnText);
+        }, 200);
+        break;
+      case 7:
+      case 99:
+        nextButton.click();
+        setTimeout(() => {
+          const nextEnText = this.document.querySelector('.lang-en')?.childNodes[0].textContent as string;
+          this.speak(nextEnText);
+        }, 200);
         break;
       default:
         // 按下了其他鍵

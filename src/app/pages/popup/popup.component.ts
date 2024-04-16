@@ -219,12 +219,16 @@ export class PopupComponent {
             });
             return isPass;
           });
-
+        const twVoice = voices.find(voice => voice.name.includes('HsiaoChen'));
         this.voices = usVoices.map(voice => {
           return {
             label: voice.name,
             value: voice.name
           };
+        });
+        this.voices.push({
+          label: twVoice?.name,
+          value: twVoice?.name
         });
       };
     });
