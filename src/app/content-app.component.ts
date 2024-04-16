@@ -1,32 +1,43 @@
 import { CommonModule, DOCUMENT } from '@angular/common';
-import { ChangeDetectionStrategy, Component, effect, inject } from '@angular/core';
+import { ApplicationRef, ChangeDetectionStrategy, Component, effect, inject } from '@angular/core';
 import { EventManagerServiceService } from './shared/services/event-manager-service.service';
 import { InjectionToken } from '@angular/core';
 import { Action } from './enum/action.enum';
-import { ajax } from 'rxjs/ajax';
-import { map, catchError, of, Subject, debounceTime } from 'rxjs';
+
+import {  Subject, debounceTime } from 'rxjs';
+import { MessageService } from 'primeng/api';
+
+import { ToastModule } from 'primeng/toast';
+
 export const WINDOW = new InjectionToken<Window>('Global window object', {
   factory: () => window
 });
 
-
 @Component({
   selector: 'content-app-root',
   standalone: true,
-  providers: [EventManagerServiceService],
+  providers: [
+    EventManagerServiceService,
+    MessageService
+  ],
   imports: [
     CommonModule,
+    ToastModule
   ],
-  template: ``,
+  template: `
+      <p-toast></p-toast>
+  `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ContentAppComponent {
 
+  messageService = inject(MessageService);
   eventManagerServiceService = inject(EventManagerServiceService);
   private eventRemovers: Function[] = [];
   private document: Document = inject(DOCUMENT);
   private window: Window = inject(WINDOW);
   action = Action;
+  appRef: ApplicationRef = inject(ApplicationRef);
 
   gamePadClickSubject = new Subject<number>();
   axisSubject = new Subject<number>();
@@ -41,6 +52,7 @@ export class ContentAppComponent {
           { event: 'keydown', callback: (e: any) => this.onFlashcardPageKeydown(e) },
         ]
       );
+      this.addGamePadConnectedEventListener();
     });
     // 初始化
     chrome.runtime.sendMessage({ action: Action.CONTEXT_APP_INIT });
@@ -89,6 +101,12 @@ export class ContentAppComponent {
 
   gamepadEventHandler = (e: GamepadEvent) => {
     chrome.runtime.sendMessage({ action: this.action.GAME_CONTROLLER_CONNECTION_SUCCESS });
+    this.messageService.add({
+      severity:'success', 
+      summary: '提示', 
+      detail: 'switch pro 手把，連線成功！',
+    });
+    this.appRef.tick();
     requestAnimationFrame(this.updateGamepads);
   }
 
@@ -194,24 +212,37 @@ export class ContentAppComponent {
     if (!this.window.location.href.includes('/test')) { return; }
     var currentItemIndex = Number(document?.querySelector('.qzk5crt')?.textContent?.split('/')[0]?.trim());
     const mcqAnswers = this.document.querySelectorAll('[role="listitem"]')[currentItemIndex]?.querySelector('[data-testid="MCQ Answers"]');
+    const sections = this.document.querySelectorAll('[role="listitem"]')[currentItemIndex]?.querySelectorAll('section');
     const soundButton = this.document.querySelectorAll('[role="listitem"]')[currentItemIndex]?.querySelector('[aria-label="sound"]') as HTMLElement;
 
     switch (buttonIndex) {
+      // 下
       case 0:
         if (mcqAnswers) {
           (mcqAnswers.childNodes[3] as HTMLElement).click();
         }
         break;
+      // 右
       case 1:
         if (mcqAnswers) {
           (mcqAnswers.childNodes[2] as HTMLElement).click();
+          return;
+        }
+        if(sections){
+          (sections[3] as HTMLElement).click();
         }
         break;
+      // 左
       case 2:
         if (mcqAnswers) {
           (mcqAnswers.childNodes[0] as HTMLElement).click();
+          return;
+        }
+        if(sections){
+          (sections[2] as HTMLElement).click();
         }
         break;
+      // 上
       case 3:
         if (mcqAnswers) {
           (mcqAnswers.childNodes[1] as HTMLElement).click();
