@@ -4,7 +4,7 @@ import { EventManagerServiceService } from './shared/services/event-manager-serv
 import { InjectionToken } from '@angular/core';
 import { Action } from './enum/action.enum';
 import { ajax } from 'rxjs/ajax';
-import { map, catchError, of } from 'rxjs';
+import { map, catchError, of, Subject, debounceTime } from 'rxjs';
 export const WINDOW = new InjectionToken<Window>('Global window object', {
   factory: () => window
 });
@@ -27,6 +27,9 @@ export class ContentAppComponent {
   private document: Document = inject(DOCUMENT);
   private window: Window = inject(WINDOW);
   action = Action;
+
+  gamePadClickSubject = new Subject<number>(); 
+  axisSubject = new Subject<number>();
 
   constructor() {
     effect(async () => {
@@ -56,6 +59,21 @@ export class ContentAppComponent {
       // 保持 sendResponse 一直是 true
       return true;
     });
+
+    this.gamePadClickSubject.subscribe((buttonIndex) => {
+      this.onLearnPageGamePadClick(buttonIndex);
+      this.onTextPageGamePadClick(buttonIndex);
+      this.onDetailPageGamePadClick(buttonIndex);
+      this.onFlashcardPageGamePadClick(buttonIndex);
+    });
+    this
+    .axisSubject
+    .pipe(
+      debounceTime(100)
+    )
+    .subscribe((axis) => {
+      this.gamePadClickSubject.next(axis);
+    });
   }
 
 
@@ -78,6 +96,9 @@ export class ContentAppComponent {
     const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
     for (let gamepad of gamepads) {
       if (gamepad) {
+        if (!this.lastButtons[gamepad.index]) {
+          this.lastButtons[gamepad.index] = [];
+        }
         gamepad.buttons.forEach((button, index) => {
           if (button.pressed) {
             if (!this.lastButtons[gamepad.index]) {
@@ -86,9 +107,7 @@ export class ContentAppComponent {
             if (!this.lastButtons[gamepad.index][index]) {
               this.lastButtons[gamepad.index][index] = true;
               // console.log(`按鈕 ${index} 被按下`);
-              this.onLearnPageGamePadClick(index);
-              this.onTextPageGamePadClick(index);
-              this.onDetailPageGamePadClick(index);
+              this.gamePadClickSubject.next(index);
             }
           } else {
             if (this.lastButtons[gamepad.index] && this.lastButtons[gamepad.index][index]) {
@@ -97,6 +116,26 @@ export class ContentAppComponent {
             }
           }
         });
+        // 處理搖桿左右移動
+        const xAxis = gamepad.axes[0];  // 通常第一軸是橫向移動
+        if (xAxis < -0.5) {
+          // console.log(`搖桿向左`);
+          this.axisSubject.next(-99);
+        } else if (xAxis > 0.5) {
+          // console.log(`搖桿向右`);
+          this.axisSubject.next(99);
+        }
+
+        // 處理右搖桿水平移動
+        const rightXAxis = gamepad.axes[2];
+        if (rightXAxis < -0.5) {
+          // console.log(`右搖桿向左`);
+          this.axisSubject.next(-99);
+        } else if (rightXAxis > 0.5) {
+          // console.log(`右搖桿向右`);
+          this.axisSubject.next(99);
+        }
+
       }
     }
     requestAnimationFrame(this.updateGamepads); // 繼續檢查狀態
@@ -273,6 +312,47 @@ export class ContentAppComponent {
         break;
     }
 
+  }
+
+  async onFlashcardPageGamePadClick(buttonIndex: number) {
+    if (!this.window.location.pathname.includes('/flashcards')) {
+      return;
+    }
+    const enText = this.document.querySelector('.lang-en')?.childNodes[0].textContent as string;
+    const starButton = this.document.querySelector('[aria-label="star filled"]') as HTMLElement;
+    const previousButton = this.document.querySelector('[aria-label="按下以學習上一張單詞卡"]') as HTMLElement;
+    const nextButton = this.document.querySelector('[aria-label="按下以學習下一張單詞卡"]') as HTMLElement;
+
+    switch (buttonIndex) {
+      case 3:
+        starButton.click();
+        break;
+      case 4:
+      case 5:
+      case 6:
+      case 7:
+        const storage = await chrome.storage.local.get(['voice', 'pitch', 'rate', 'volume']);
+        const voices = speechSynthesis.getVoices();
+        let selectedVoice = voices.find(voice => voice.name === storage['voice']);
+        let utterance = new SpeechSynthesisUtterance(enText);
+        utterance.voice = selectedVoice as any;
+        utterance.pitch = storage['pitch'];
+        utterance.rate = storage['rate'];
+        utterance.volume = storage['volume'];
+        // 播放語音
+        this.window.speechSynthesis.cancel();
+        this.window.speechSynthesis.speak(utterance);
+        break;
+      case 99:
+        nextButton.click();
+        break;
+      case -99:
+        previousButton.click();
+        break;
+      default:
+        // 按下了其他鍵
+        break;
+    }
   }
 
   async onFlashcardPageKeydown(event: KeyboardEvent) {
