@@ -318,6 +318,9 @@ export class ContentAppComponent {
       case 7:
         termText?.click();
         break;
+      case 9:
+        this.setListFontSizeAndKK();
+        break;
       default:
         break;
     }
@@ -403,6 +406,16 @@ export class ContentAppComponent {
           const nextEnText = this.document.querySelector('.lang-en')?.childNodes[0].textContent as string;
           this.speak(nextEnText);
         }, 200);
+        break;
+      case 9:
+        for (let i = 0; i < 2000; i++) {
+          setTimeout(() => {
+            (this.document.querySelector('[aria-label="star filled"]') as HTMLElement )?.click();
+            setTimeout(() => {
+              nextButton?.click();
+            });
+          }, 300 * i);
+        }
         break;
       default:
         // 按下了其他鍵
