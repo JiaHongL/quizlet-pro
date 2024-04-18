@@ -13,7 +13,10 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://quizlet.com/*"],
+      "matches": [
+        "https://quizlet.com/*",
+        "https://app.wordup.com.tw/*"
+      ],
       "js": [
         "content-script.js",
         "main.js"
@@ -27,7 +30,10 @@
   "web_accessible_resources": [
     {
       "resources": ["index.html", "/*.js", "/*.css"],
-      "matches": ["https://quizlet.com/*"],
+      "matches": [
+        "https://quizlet.com/*",
+        "https://app.wordup.com.tw/*"
+      ],
       "use_dynamic_url": true
     }
   ],

@@ -21,7 +21,6 @@ import { MessageService } from 'primeng/api';
     <p-toast
       position="top-center"
     ></p-toast>
-  `,
-  styles: [],
+  `
 })
 export class AppComponent {}

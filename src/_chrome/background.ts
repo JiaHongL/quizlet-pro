@@ -55,30 +55,60 @@ if (process.env['ENABLE_LIVE_RELOAD']) {
   console.log("Live reload is disabled");
 }
 
-let contentAppSenderTabId:any;
+let contentAppSenderTabId: any;
 
 /** 接收來自 popup.htm、options.html 的訊息 */
-chrome.runtime.onMessage.addListener((request:Message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request: Message, sender, sendResponse) => {
   if (
     request.hasOwnProperty('action')
   ) {
     if (request.action === Action.CONTEXT_APP_INIT) {
       contentAppSenderTabId = sender?.tab?.id;
-    }else{
-      chrome.tabs.sendMessage(contentAppSenderTabId, request, function(response) {});
+    } else if (request.action === Action.WORD_UP_QUERY) {
+      (chrome.windows as any).getCurrent((currentWindow: chrome.windows.Window) => {
+        // 獲取當前窗口的尺寸和位置
+        const currentWidth = currentWindow.width || 800;
+        const currentHeight = currentWindow.height || 600;
+        const currentLeft = currentWindow.left || 0;
+        const currentTop = currentWindow.top || 0;
+  
+        // 定義新窗口的尺寸 
+        let newWidth = 720;
+        let newHeight = 650;
+  
+        // 計算新窗口在屏幕正中間打開的left和top值
+        const left = Math.round(currentLeft + (currentWidth - newWidth) / 2);
+        const top = Math.round(currentTop + (currentHeight - newHeight) / 2);
+  
+        (chrome.windows as any).create({
+          url: 'https://app.wordup.com.tw/decks/query?currentDeckId=2374483&queryStr=' + encodeURIComponent(request.queryWord as string),
+          type: 'panel',
+          width: newWidth,
+          height: newHeight,
+          left: left,
+          top: top
+        });
+      })
+    } else if (request.action === Action.CLOSE_WINDOW) {
+      (chrome.windows as any).getCurrent((currentWindow: chrome.windows.Window) => {
+        (chrome.windows as any).remove(currentWindow.id);
+      })
+    }
+    else {
+      chrome.tabs.sendMessage(contentAppSenderTabId, request, function (response) { });
     }
   }
   if (request.hasOwnProperty('url')) {
     const url = request.url as string;
     fetch(url)
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      return request.responseType === 'text' ? response.text() : response.json();
-    })
-    .then(data => sendResponse({ data })) // 發送文本給內容腳本
-    .catch(error => sendResponse({ error: error.message }));
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return request.responseType === 'text' ? response.text() : response.json();
+      })
+      .then(data => sendResponse({ data })) // 發送文本給內容腳本
+      .catch(error => sendResponse({ error: error.message }));
   }
 
   return true;

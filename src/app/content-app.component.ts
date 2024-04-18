@@ -4,7 +4,7 @@ import { EventManagerServiceService } from './shared/services/event-manager-serv
 import { InjectionToken } from '@angular/core';
 import { Action } from './enum/action.enum';
 
-import {  Subject, debounceTime } from 'rxjs';
+import { Subject, debounceTime } from 'rxjs';
 import { MessageService } from 'primeng/api';
 
 import { ToastModule } from 'primeng/toast';
@@ -53,6 +53,22 @@ export class ContentAppComponent {
         ]
       );
       this.addGamePadConnectedEventListener();
+
+      if (window.location.pathname.includes('/decks/query')) {
+        let intervalID = setInterval(() => {
+          // 查詢 document.body 中包含 "其他卡堆" 文字的 div 元素
+          const divsWithText = document.querySelectorAll('.text-sm.text-grayscale-1100');
+          const urlParams = new URLSearchParams(window.location.search);
+          const queryWord = urlParams.get('queryStr')?.replace(/\s+/g, '')
+          // 過濾出包含特定文字的 div
+          const targetDiv = Array.from(divsWithText).find(div => div?.textContent == queryWord) as HTMLElement;
+          if (targetDiv) {
+            clearInterval(intervalID);
+            targetDiv?.click();
+          }
+        }, 300)
+      }
+
     });
     // 初始化
     chrome.runtime.sendMessage({ action: Action.CONTEXT_APP_INIT });
@@ -77,6 +93,7 @@ export class ContentAppComponent {
       this.onTextPageGamePadClick(buttonIndex);
       this.onDetailPageGamePadClick(buttonIndex);
       this.onFlashcardPageGamePadClick(buttonIndex);
+      this.onWordUpPageGamePadClick(buttonIndex);
     });
     this
       .axisSubject
@@ -102,10 +119,10 @@ export class ContentAppComponent {
   gamepadEventHandler = (e: GamepadEvent) => {
     chrome.runtime.sendMessage({ action: this.action.GAME_CONTROLLER_CONNECTION_SUCCESS });
     this.messageService.add({
-      severity:'success', 
-      summary: '提示', 
+      severity: 'success',
+      summary: '提示',
       detail: 'switch pro 手把，連線成功！',
-    });
+    })
     this.appRef.tick();
     requestAnimationFrame(this.updateGamepads);
   }
@@ -134,29 +151,75 @@ export class ContentAppComponent {
             }
           }
         });
-        // 處理搖桿左右移動
-        const xAxis = gamepad.axes[0];  // 通常第一軸是橫向移動
+        // 處理左搖桿的水平與垂直移動
+        const xAxis = gamepad.axes[0];  // 第一軸是水平移動
+        const yAxis = gamepad.axes[1];  // 第二軸是垂直移動
+
         if (xAxis < -0.5) {
-          // console.log(`搖桿向左`);
+          // 搖桿向左
           this.axisSubject.next(-99);
         } else if (xAxis > 0.5) {
-          // console.log(`搖桿向右`);
+          // 搖桿向右
           this.axisSubject.next(99);
         }
 
-        // 處理右搖桿水平移動
-        const rightXAxis = gamepad.axes[2];
+        if (yAxis < -0.5) {
+          // 搖桿向上
+          this.axisSubject.next(88);
+        } else if (yAxis > 0.5) {
+          // 搖桿向下
+          this.axisSubject.next(-88);
+        }
+
+        // 處理右搖桿的水平與垂直移動
+        const rightXAxis = gamepad.axes[2];  // 第三軸是水平移動
+        const rightYAxis = gamepad.axes[3];  // 第四軸是垂直移動
+
         if (rightXAxis < -0.5) {
-          // console.log(`右搖桿向左`);
+          // 右搖桿向左
           this.axisSubject.next(-99);
         } else if (rightXAxis > 0.5) {
-          // console.log(`右搖桿向右`);
+          // 右搖桿向右
           this.axisSubject.next(99);
+        }
+
+        if (rightYAxis < -0.5) {
+          // 右搖桿向上
+          this.axisSubject.next(88);
+        } else if (rightYAxis > 0.5) {
+          // 右搖桿向下
+          this.axisSubject.next(-88);
         }
 
       }
     }
     requestAnimationFrame(this.updateGamepads); // 繼續檢查狀態
+  }
+
+  onWordUpPageGamePadClick(buttonIndex: number) {
+    if (!window.location.pathname.includes('/decks/')) {
+      return;
+    }
+    switch (buttonIndex) {
+      case 13:
+      case -88:
+        chrome.runtime.sendMessage({ action: this.action.CLOSE_WINDOW });
+        break;
+      case 12:
+      case 14:
+      case 88:
+      case -99:
+        if (window.location.pathname.includes('/decks/query')) {
+          (this.document?.body?.querySelector('.bg-grayscale-000.rounded-lg.shadow-md')?.children[0] as HTMLElement)?.click();
+        } else {
+          const enText = this.document?.querySelector('.text-grayscale-800.font-bold.break-all.font-noto')?.textContent?.toLowerCase();
+          const soundButton = this.document.querySelector('[alt$="' + enText + '-us"]') as HTMLElement;
+          soundButton?.click();
+        }
+        break;
+      default:
+        break;
+    }
   }
 
   onLearnPageGamePadClick(buttonIndex: number) {
@@ -189,6 +252,14 @@ export class ContentAppComponent {
       case 7:
         soundButton?.click();
         continueButton?.click();
+        break;
+      case 8:
+      case 15:
+      case 99:
+        chrome.runtime.sendMessage({
+          action: this.action.WORD_UP_QUERY,
+          queryWord: this.document.querySelector('.lang-en')?.textContent + ' '
+        });
         break;
       default:
         break;
@@ -228,7 +299,7 @@ export class ContentAppComponent {
           (mcqAnswers.childNodes[2] as HTMLElement).click();
           return;
         }
-        if(sections){
+        if (sections) {
           (sections[3] as HTMLElement).click();
         }
         break;
@@ -238,7 +309,7 @@ export class ContentAppComponent {
           (mcqAnswers.childNodes[0] as HTMLElement).click();
           return;
         }
-        if(sections){
+        if (sections) {
           (sections[2] as HTMLElement).click();
         }
         break;
@@ -352,7 +423,7 @@ export class ContentAppComponent {
     const storage = await chrome.storage.local.get(['voice', 'pitch', 'rate', 'volume']);
     const voices = speechSynthesis.getVoices();
     let selectedVoice = voices.find(voice => voice.name === storage['voice']);
-    if(isTwVoice){
+    if (isTwVoice) {
       selectedVoice = voices.find(voice => voice.name.includes('HsiaoChen'));
     }
     let utterance = new SpeechSynthesisUtterance(text);
@@ -391,8 +462,14 @@ export class ContentAppComponent {
       case 5:
         this.speak(enText);
         break;
+      case 15:
+      case 99:
+        chrome.runtime.sendMessage({
+          action: this.action.WORD_UP_QUERY,
+          queryWord: this.document.querySelector('.lang-en')?.textContent + ' '
+        });
+        break;
       case 6:
-      case -99:
         previousButton.click();
         setTimeout(() => {
           const preEnText = this.document.querySelector('.lang-en')?.childNodes[0].textContent as string;
@@ -400,7 +477,6 @@ export class ContentAppComponent {
         }, 200);
         break;
       case 7:
-      case 99:
         nextButton.click();
         setTimeout(() => {
           const nextEnText = this.document.querySelector('.lang-en')?.childNodes[0].textContent as string;
@@ -410,7 +486,7 @@ export class ContentAppComponent {
       case 9:
         for (let i = 0; i < 2000; i++) {
           setTimeout(() => {
-            (this.document.querySelector('[aria-label="star filled"]') as HTMLElement )?.click();
+            (this.document.querySelector('[aria-label="star filled"]') as HTMLElement)?.click();
             setTimeout(() => {
               nextButton?.click();
             });
