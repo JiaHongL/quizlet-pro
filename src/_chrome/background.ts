@@ -73,7 +73,7 @@ chrome.runtime.onMessage.addListener((request: Message, sender, sendResponse) =>
         const currentTop = currentWindow.top || 0;
   
         // 定義新窗口的尺寸 
-        let newWidth = 720;
+        let newWidth = 750;
         let newHeight = 650;
   
         // 計算新窗口在屏幕正中間打開的left和top值

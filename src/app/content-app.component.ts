@@ -66,7 +66,7 @@ export class ContentAppComponent {
             clearInterval(intervalID);
             targetDiv?.click();
           }
-        }, 300)
+        }, 200)
       }
 
     });
@@ -98,7 +98,7 @@ export class ContentAppComponent {
     this
       .axisSubject
       .pipe(
-        debounceTime(100)
+        debounceTime(200)
       )
       .subscribe((axis) => {
         this.gamePadClickSubject.next(axis);
@@ -206,9 +206,14 @@ export class ContentAppComponent {
         chrome.runtime.sendMessage({ action: this.action.CLOSE_WINDOW });
         break;
       case 12:
-      case 14:
       case 88:
+        const audioElement = this.document?.body?.querySelector('[data-testid="VolumeUpOutlinedIcon"]')?.parentElement?.querySelector('audio') as HTMLAudioElement;
+        audioElement?.play();
+        break;
+      case 14:
       case -99:
+      case 5:
+      case 4:
         if (window.location.pathname.includes('/decks/query')) {
           (this.document?.body?.querySelector('.bg-grayscale-000.rounded-lg.shadow-md')?.children[0] as HTMLElement)?.click();
         } else {
@@ -244,11 +249,9 @@ export class ContentAppComponent {
         (mcqAnswers?.childNodes[1] as HTMLElement)?.click();
         continueButton?.click();
         break;
-      case 4:
       case 6:
         soundButton?.click();
         break;
-      case 5:
       case 7:
         soundButton?.click();
         continueButton?.click();
@@ -319,8 +322,6 @@ export class ContentAppComponent {
           (mcqAnswers.childNodes[1] as HTMLElement).click();
         }
         break;
-      case 4:
-      case 5:
       case 6:
       case 7:
         soundButton?.click();
@@ -458,8 +459,6 @@ export class ContentAppComponent {
         this.speak(enText, true);
         break;
       case 1:
-      case 4:
-      case 5:
         this.speak(enText);
         break;
       case 15:
