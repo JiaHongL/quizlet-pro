@@ -42,6 +42,8 @@ export class ContentAppComponent {
   gamePadClickSubject = new Subject<number>();
   axisSubject = new Subject<number>();
 
+  soundIntervalID:any = null;
+
   constructor() {
     effect(async () => {
       this.eventRemovers = this.eventManagerServiceService.addMultipleEvents(this.window,
@@ -257,6 +259,16 @@ export class ContentAppComponent {
         continueButton?.click();
         break;
       case 8:
+        if(!this.soundIntervalID){
+          this.soundIntervalID = setInterval(() => {
+            const currentSoundButton = this.document.querySelector('[aria-label="sound"]') as HTMLElement;
+            currentSoundButton?.click();
+          }, 2000);
+        }else{
+          clearInterval(this.soundIntervalID);
+          this.soundIntervalID = null;
+        }
+        break;
       case 15:
       case 99:
         chrome.runtime.sendMessage({
@@ -373,25 +385,30 @@ export class ContentAppComponent {
     if (!this.window.location.pathname.includes('/tw/')) {
       return;
     }
-
-    const termText = this.document.querySelector('.SetPageTerms-term')?.querySelector('[data-testid=set-page-card-side]')?.querySelector('.TermText') as HTMLElement;
-    const starButton = this.document.querySelector('.SetPageTerms-term')?.querySelector('[aria-label="星號標記"]') as HTMLElement;
-
     switch (buttonIndex) {
-      case 0:
       case 1:
-      case 2:
       case 3:
-        starButton?.click();
+      case 0:
+      case 2:
+        const starButton = this.document.querySelector('.SetPageTerms-term')?.querySelector('[aria-label="星號標記"]') as HTMLElement;
+        setTimeout(() => {
+          starButton?.click();
+        });
         break;
-      case 4:
       case 6:
-      case 5:
       case 7:
+        const termText = this.document.querySelector('.SetPageTerms-term')?.querySelector('[data-testid=set-page-card-side]')?.querySelector('.TermText') as HTMLElement;
         termText?.click();
         break;
       case 9:
         this.setListFontSizeAndKK();
+        break;
+      case 15:
+      case 99:
+        chrome.runtime.sendMessage({
+          action: this.action.WORD_UP_QUERY,
+          queryWord: this.document.querySelector('.SetPageTerms-term')?.querySelector('[data-testid=set-page-card-side]')?.querySelector('.lang-en')?.textContent + ' '
+        });
         break;
       default:
         break;
@@ -489,7 +506,7 @@ export class ContentAppComponent {
             setTimeout(() => {
               nextButton?.click();
             });
-          }, 300 * i);
+          }, 500 * i);
         }
         break;
       default:
